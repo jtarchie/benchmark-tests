@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/dop251/goja"
 	"github.com/expr-lang/expr"
 	"github.com/jaswdr/faker/v2"
+	v8 "github.com/tommie/v8go"
 )
 
 type Item struct {
@@ -13,7 +15,7 @@ type Item struct {
 	Address string
 }
 
-const SIZE = 1_000
+const SIZE = 10_000
 
 func setupItems(b *testing.B) []Item {
 	b.Helper()
@@ -77,6 +79,51 @@ func BenchmarkEvaluation(b *testing.B) {
 			}
 		}
 	})
+
+	b.Run("v8", func(b *testing.B) {
+		iso := v8.NewIsolate()
+		ctx := v8.NewContext(iso)
+		script, err := iso.CompileUnboundScript(javascript, "file.js", v8.CompileOptions{}) //
+		if err != nil {
+			b.Fatalf("could not compile: %s", err)
+		}
+
+		array, err := ctx.RunScript(fmt.Sprintf("new Array(%d)", len(items)), "")
+		if err != nil {
+			b.Fatalf("could not set: %s", err)
+		}
+		arrayObj := array.Object()
+		
+		for index, item := range items {
+			hash, err := ctx.RunScript("new Map()", "")
+			if err != nil {
+				b.Fatalf("could not set: %s", err)
+			}
+			mapObject := hash.Object()
+			mapObject.Set("Name", item.Name)
+			mapObject.Set("Address", item.Address)
+			
+			arrayObj.SetIdx(uint32(index), mapObject)
+		}
+
+		ctx.Global().Set("items", arrayObj)
+
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			value, err := script.Run(ctx)
+			if err != nil {
+				b.Fatalf("could not run: %s", err)
+			}
+			length, err := value.Object().Get("length")
+			if err != nil {
+				b.Fatalf("could not gte length: %s", err)
+			}
+			if length.Uint32() == 0 {
+				b.Fatalf("could not run: %s", err)
+			}
+		}
+	})
 }
 
 const javascript = `
@@ -87,4 +134,5 @@ const javascript = `
 			filteredItems.push(items[i])
 		}
 	}
+	filteredItems
 `
