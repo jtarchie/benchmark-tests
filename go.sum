@@ -26,5 +26,7 @@ github.com/tommie/v8go/deps/linux_amd64 v0.0.0-20240501150430-eeb2274ce183 h1:GV
 github.com/tommie/v8go/deps/linux_amd64 v0.0.0-20240501150430-eeb2274ce183/go.mod h1:ZKG7g6Rah4/ZRzb07qFrQI/EPSm2PMj1cN/9y4fxgO8=
 github.com/tommie/v8go/deps/linux_arm64 v0.0.0-20240501150430-eeb2274ce183 h1:G88jNgZXPFl/HZkP2PIEshSp8HNXc4Ei/bVRbFYXG+8=
 github.com/tommie/v8go/deps/linux_arm64 v0.0.0-20240501150430-eeb2274ce183/go.mod h1:B/myVnZ82IRgW//OzDnHArcOzW8Yq7FbWnMnYPbZ0Hc=
+github.com/traefik/yaegi v0.16.1 h1:f1De3DVJqIDKmnasUF6MwmWv1dSEEat0wcpXhD2On3E=
+github.com/traefik/yaegi v0.16.1/go.mod h1:4eVhbPb3LnD2VigQjhYbEJ69vDRFdT2HQNrXx8eEwUY=
 golang.org/x/text v0.3.8 h1:nAL+RVCQ9uMn3vJZbV+MRnydTJFPf8qqY42YiA6MrqY=
 golang.org/x/text v0.3.8/go.mod h1:E6s5w1FMmriuDzIBO73fBruAKo1PCIq6d2Q6DHfQ8WQ=

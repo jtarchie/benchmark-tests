@@ -8,23 +8,20 @@ import (
 	"github.com/expr-lang/expr"
 	"github.com/jaswdr/faker/v2"
 	v8 "github.com/tommie/v8go"
+	"github.com/traefik/yaegi/interp"
+	"github.com/traefik/yaegi/stdlib"
 )
-
-type Item struct {
-	Name    string
-	Address string
-}
 
 const SIZE = 10_000
 
-func setupItems(b *testing.B) []Item {
+func setupItems(b *testing.B) []struct { Name string; Address string } {
 	b.Helper()
 
-	items := make([]Item, 0, SIZE)
+	items := make([]struct { Name string; Address string }, 0, SIZE)
 
 	fake := faker.New()
 	for range SIZE {
-		items = append(items, Item{
+		items = append(items, struct { Name string; Address string }{
 			Name:    fake.Person().Name(),
 			Address: fake.Address().Address(),
 		})
@@ -72,7 +69,7 @@ func BenchmarkEvaluation(b *testing.B) {
 				b.Fatalf("could not run: %s", err)
 			}
 
-			var filterItems []Item
+			var filterItems []struct { Name string; Address string }
 			err = vm.ExportTo(vm.Get("filteredItems"), &filterItems)
 			if err != nil {
 				b.Fatalf("could not export: %s", err)
@@ -120,6 +117,51 @@ func BenchmarkEvaluation(b *testing.B) {
 				b.Fatalf("could not gte length: %s", err)
 			}
 			if length.Uint32() == 0 {
+				b.Fatalf("could not run: %s", err)
+			}
+		}
+	})
+
+	b.Run("yaegi", func(b *testing.B) {
+		i := interp.New(interp.Options{})
+		i.Use(stdlib.Symbols)
+		
+		_, err := i.Eval(`
+			package main
+
+			import "strings"
+
+			type Item struct {
+				Name    string
+				Address string
+			}
+
+			func Filter(items []Item) []Item {
+				filtered := []Item
+				for _, item := range items {
+					if strings.Contains(strings.ToLower(item.Name), "a") {
+						filtered = append(filtered, item)
+					}
+				}
+
+				return filtered
+			}
+		`)
+		if err != nil {
+			b.Fatalf("could not eval: %s", err)
+		}
+
+		value, err := i.Eval("main.Filter")
+		if err != nil {
+			b.Fatalf("could not get filter: %s", err)
+		}
+
+		fun := value.Interface().(func([]struct { Name string; Address string }) []struct { Name string; Address string })
+
+		for i := 0; i < b.N; i++ {
+			filtered := fun(items)
+
+			if len(filtered) == 0 {
 				b.Fatalf("could not run: %s", err)
 			}
 		}

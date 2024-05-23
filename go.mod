@@ -17,5 +17,6 @@ require (
 	github.com/tommie/v8go/deps/darwin_arm64 v0.0.0-20240501150430-eeb2274ce183 // indirect
 	github.com/tommie/v8go/deps/linux_amd64 v0.0.0-20240501150430-eeb2274ce183 // indirect
 	github.com/tommie/v8go/deps/linux_arm64 v0.0.0-20240501150430-eeb2274ce183 // indirect
+	github.com/traefik/yaegi v0.16.1 // indirect
 	golang.org/x/text v0.3.8 // indirect
 )
