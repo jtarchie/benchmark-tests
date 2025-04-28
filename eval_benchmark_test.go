@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/dop251/goja"
@@ -14,14 +15,23 @@ import (
 
 const SIZE = 10_000
 
-func setupItems(b *testing.B) []struct { Name string; Address string } {
+func setupItems(b *testing.B) []struct {
+	Name    string
+	Address string
+} {
 	b.Helper()
 
-	items := make([]struct { Name string; Address string }, 0, SIZE)
+	items := make([]struct {
+		Name    string
+		Address string
+	}, 0, SIZE)
 
 	fake := faker.New()
 	for range SIZE {
-		items = append(items, struct { Name string; Address string }{
+		items = append(items, struct {
+			Name    string
+			Address string
+		}{
 			Name:    fake.Person().Name(),
 			Address: fake.Address().Address(),
 		})
@@ -32,6 +42,28 @@ func setupItems(b *testing.B) []struct { Name string; Address string } {
 
 func BenchmarkEvaluation(b *testing.B) {
 	items := setupItems(b)
+
+	b.Run("Pure Go", func(b *testing.B) {
+		filtered := make([]struct {
+			Name    string
+			Address string
+		}, 0)
+
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			for _, item := range items {
+				if strings.Contains(strings.ToLower(item.Name), "a") {
+					filtered = append(filtered, item)
+				}
+			}
+
+			if len(filtered) == 0 {
+				b.Fatalf("unexpected empty result set")
+			}
+			filtered = filtered[:0]
+		}
+	})
 
 	b.Run("Expr", func(b *testing.B) {
 		env := map[string]interface{}{
@@ -69,7 +101,10 @@ func BenchmarkEvaluation(b *testing.B) {
 				b.Fatalf("could not run: %s", err)
 			}
 
-			var filterItems []struct { Name string; Address string }
+			var filterItems []struct {
+				Name    string
+				Address string
+			}
 			err = vm.ExportTo(vm.Get("filteredItems"), &filterItems)
 			if err != nil {
 				b.Fatalf("could not export: %s", err)
@@ -90,7 +125,7 @@ func BenchmarkEvaluation(b *testing.B) {
 			b.Fatalf("could not set: %s", err)
 		}
 		arrayObj := array.Object()
-		
+
 		for index, item := range items {
 			hash, err := ctx.RunScript("new Map()", "")
 			if err != nil {
@@ -99,7 +134,7 @@ func BenchmarkEvaluation(b *testing.B) {
 			mapObject := hash.Object()
 			mapObject.Set("Name", item.Name)
 			mapObject.Set("Address", item.Address)
-			
+
 			arrayObj.SetIdx(uint32(index), mapObject)
 		}
 
@@ -125,7 +160,7 @@ func BenchmarkEvaluation(b *testing.B) {
 	b.Run("yaegi", func(b *testing.B) {
 		i := interp.New(interp.Options{})
 		i.Use(stdlib.Symbols)
-		
+
 		_, err := i.Eval(`
 			package main
 
@@ -156,7 +191,13 @@ func BenchmarkEvaluation(b *testing.B) {
 			b.Fatalf("could not get filter: %s", err)
 		}
 
-		fun := value.Interface().(func([]struct { Name string; Address string }) []struct { Name string; Address string })
+		fun := value.Interface().(func([]struct {
+			Name    string
+			Address string
+		}) []struct {
+			Name    string
+			Address string
+		})
 
 		for i := 0; i < b.N; i++ {
 			filtered := fun(items)
@@ -169,12 +210,8 @@ func BenchmarkEvaluation(b *testing.B) {
 }
 
 const javascript = `
-	var filteredItems = []
-	
-	for (let i = 0; i < items.length; i++) {
-		if (items[i].Name.toLowerCase().includes("a")) {
-			filteredItems.push(items[i])
-		}
-	}
+	var filteredItems = items.filter(item => 
+		item.Name.toLowerCase().includes("a")
+	);
 	filteredItems
 `
